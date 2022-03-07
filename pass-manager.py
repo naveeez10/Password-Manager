@@ -1,6 +1,33 @@
+import json
 from tkinter import *
 from tkinter import messagebox
 import pyperclip
+# ---------------------------- SEARCHING THROUGH DATA ------------------------------- #
+
+def search_data():
+    
+    with open("data.json","r") as file:
+        try:
+            data = json.load(file)
+        except json.decoder.JSONDecodeError:
+            data = {}
+    
+    data_list = data.items()
+    asked = website_entry.get()
+    done = False
+    
+    for key in data_list:
+        if key[0] == asked:
+            done = True
+            req_username = key[1]['username']
+            req_password = key[1]['password']
+            break
+    
+    if done == False:
+        messagebox.showwarning(title="Ooops",message=f"No credentials found for {asked}")
+    else:
+        messagebox.showinfo(title="Credentials",message=f"Your credentials for {asked} are : \n Username : {req_username} \n Password : {req_password}\n")
+
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 import random
 letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
@@ -30,7 +57,7 @@ def generate_password():
     
     password_entry.insert(END,string=password)
     pyperclip.copy(password)
-    
+
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 
@@ -39,20 +66,35 @@ def add_pressed():
     username_text = username_entry.get()
     password_text = password_entry.get()
 
+    new_data = {
+        website_text : {
+            "username" : username_text,
+            "password" : password_text,
+        }
+    }
+
     if website_text == "" or username_text == "" or password_text == "":
         messagebox.showwarning(title="Invalid Field",message="Please fill all the fields")
         return
 
-    is_ok = messagebox.askokcancel(title=website_text,
-    message=f"These are your credentials.\n Email : {username_text}.\n Password : {password_text}. \nAre you sure you want to save them?")
-
-    if is_ok:
-        data_file = open("pass_data.txt","a")
-        data_file.write(f"{website_text} | {username_text} | {password_text} \n")
-        data_file.close()
-        website_entry.delete(0,END)
-        password_entry.delete(0,END)
-        messagebox.showinfo(title="Success",message="Credentials Successfully saved!")
+    try:
+            with open("data.json", "r") as data_file:
+                try:
+                    data = json.load(data_file)
+                except json.decoder.JSONDecodeError:
+                    data = {}
+    except FileNotFoundError:
+            with open("data.json", "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+    else:
+            data.update(new_data)
+            print(new_data)
+            with open("data.json", "w") as data_file:
+                json.dump(data, data_file, indent=4)
+    finally:
+            website_entry.delete(0, END)
+            password_entry.delete(0, END)
+    messagebox.showinfo(title="Success",message="Credentials Successfully saved!")
 # ---------------------------- UI SETUP ------------------------------- #
 
 window = Tk()
@@ -73,13 +115,16 @@ username_label.grid(row = 2,column=0)
 password_label = Label(text = "Password")
 password_label.grid(row = 3,column=0)
 
-website_entry = Entry(width = 35)
+website_entry = Entry(width = 17)
 website_entry.focus()
-website_entry.grid(row = 1,column=1,columnspan=2)
+website_entry.grid(row = 1,column=1,columnspan=1)
 
 username_entry = Entry(width = 35)
 username_entry.insert(END,string="vizkhoja@gmail.com")
 username_entry.grid(row = 2,column=1,columnspan=2)
+
+search_butt = Button(text="Search",command=search_data)
+search_butt.grid(row=1,column=2)
 
 password_entry = Entry(width = 17)
 password_entry.grid(row = 3,column=1,columnspan=1)
